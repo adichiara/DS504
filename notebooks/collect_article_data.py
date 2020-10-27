@@ -236,12 +236,14 @@ from github import Github
 
 # ---------
 
-github_token = "7bc5e6c9c2ed37ba411204c0e4917bf1c13761b7"
-
 git_file = 'article_df.csv'
 dbfs_file = '/dbfs/saved_df/article_df.csv'
 
 # ---------
+
+f = open("github_token.txt", "r")
+github_token = f.read()
+f.close()
 
 g = Github(github_token)
 repo = g.get_repo("adichiara/DS504")
