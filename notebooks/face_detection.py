@@ -44,7 +44,7 @@ spark
 
 # COMMAND ----------
 
-# dbutils.fs.ls('/')
+dbutils.fs.ls('/')
 
 # COMMAND ----------
 
@@ -86,10 +86,6 @@ for i, x in article_df.iterrows():
 # read images into Spark image dataframe
 image_df = spark.read.format("image").load('/img_dir/')
 
-
-# COMMAND ----------
-
-known_faces_df = pd.read_csv('/dbfs/saved_df/known_faces_df.csv', header=0, index_col=0)
 
 # COMMAND ----------
 
@@ -147,14 +143,19 @@ article_df.head()
 
 
 face_list = []
+face_df = pd.DataFrame()
 face_np = np.array([])
 
 for i,x in article_df.iterrows():
+    if (i % 100 == 0):
+        print(i)
+    
     try:
         image = face_recognition.load_image_file(x['image_path'])
+        
     except:
         continue
-
+    
 #     plt.imshow(image)
 #     plt.show()
 
@@ -210,6 +211,10 @@ face_np = np.array(face_list)
 
 # COMMAND ----------
 
+face_df.head()
+
+# COMMAND ----------
+
 from pyspark.sql import SparkSession
 from pyspark.sql.types import *
 
@@ -233,4 +238,59 @@ display(spark_df)
 
 # COMMAND ----------
 
-face_df.name.value_counts()['Joe Biden']
+print(face_df.name.value_counts()['Joe Biden'])
+print(face_df.name.value_counts()['Donald Trump'])
+
+      
+
+# COMMAND ----------
+
+face_df.to_csv('/dbfs/saved_df/face_df.csv')
+
+# COMMAND ----------
+
+# Upload datafile to github repo
+
+!pip install PyGithub
+from github import Github
+
+# ---------
+
+git_file = 'face_df.csv'
+dbfs_file = '/dbfs/saved_df/face_df.csv'
+
+# ---------
+
+f = open("github_token.txt", "r")
+github_token = f.read()
+f.close()
+
+g = Github(github_token)
+repo = g.get_repo("adichiara/DS504")
+contents = repo.get_contents("")
+all_files = []
+
+while contents:
+    file_content = contents.pop(0)
+    if file_content.type == "dir":
+        contents.extend(repo.get_contents(file_content.path))
+    else:
+        file = file_content
+        all_files.append(str(file).replace('ContentFile(path="','').replace('")',''))
+
+
+with open(dbfs_file, 'r') as file:
+    content = file.read()
+
+# ---------
+    
+commit_txt = "uploaded from Databricks."
+
+if git_file in all_files:
+    contents = repo.get_contents(git_file)
+    repo.update_file(contents.path, commit_txt, content, contents.sha, branch="main")
+    print(git_file + ' UPDATED')
+else:
+    repo.create_file(git_file, commit_txt, content, branch="main")
+    print(git_file + ' CREATED')
+    
