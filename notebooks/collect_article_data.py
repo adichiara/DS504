@@ -226,3 +226,50 @@ article_df.to_csv('/dbfs/saved_df/article_df.csv')
 
 test_df = pd.read_csv("/dbfs/saved_df/article_df.csv", header=0, index_col=0)
 display(test_df)
+
+# COMMAND ----------
+
+# Upload datafile to github repo
+
+!pip install PyGithub
+from github import Github
+
+# ---------
+
+github_token = "7bc5e6c9c2ed37ba411204c0e4917bf1c13761b7"
+
+git_file = 'article_df.csv'
+dbfs_file = '/dbfs/saved_df/article_df.csv'
+
+# ---------
+
+g = Github(github_token)
+repo = g.get_repo("adichiara/DS504")
+contents = repo.get_contents("")
+all_files = []
+
+while contents:
+    file_content = contents.pop(0)
+    if file_content.type == "dir":
+        contents.extend(repo.get_contents(file_content.path))
+    else:
+        file = file_content
+        all_files.append(str(file).replace('ContentFile(path="','').replace('")',''))
+
+
+with open(dbfs_file, 'r') as file:
+    content = file.read()
+
+# ---------
+    
+commit_txt = "uploaded from Databricks."
+
+if git_file in all_files:
+    contents = repo.get_contents(git_file)
+    repo.update_file(contents.path, commit_txt, content, contents.sha, branch="main")
+    print(git_file + ' UPDATED')
+else:
+    repo.create_file(git_file, commit_txt, content, branch="main")
+    print(git_file + ' CREATED')
+    
+    
