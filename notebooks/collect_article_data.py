@@ -226,10 +226,3 @@ article_df.to_csv('/dbfs/saved_df/article_df.csv')
 
 test_df = pd.read_csv("/dbfs/saved_df/article_df.csv", header=0, index_col=0)
 display(test_df)
-
-# COMMAND ----------
-
-# MAGIC %sh git clone https://github.com/adichiara/DS504
-
-# COMMAND ----------
-
