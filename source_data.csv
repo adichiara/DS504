@@ -1,0 +1,20 @@
+source_name,source_id,source_bias
+ABC News,abc-news ,Lean Left
+Associated Press,associated-press ,Center
+Axios,axios ,Center
+Bloomberg,bloomberg ,Lean Left
+Breitbart News,breitbart-news ,Right
+Buzzfeed,buzzfeed ,Left
+CBC News,cbc-news ,Lean Left
+CNN,cnn ,Lean Left
+MSNBC,msnbc ,Left
+National Review,national-review ,Right
+NBC News,nbc-news ,Lean Left
+Politico,politico ,Lean Left
+Reuters,reuters ,Center
+The Hill,the-hill ,Center
+The Huffington Post,the-huffington-post ,Left
+The Wall Street Journal,the-wall-street-journal ,Center
+The Washington Post,the-washington-post ,Lean Left
+The Washington Times,the-washington-times ,Lean Right
+USA Today,usa-today ,Center
