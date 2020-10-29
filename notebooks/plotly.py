@@ -2,6 +2,11 @@
 import numpy as np
 import pandas as pd
 
+import matplotlib as plt
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+import csv
+
 !pip install chart_studio
 !pip install plotly --upgrade
 
@@ -26,12 +31,11 @@ chart_studio.tools.set_credentials_file(username='adamjd',
 
 # COMMAND ----------
 
+# make backups of existing data 
 
-import matplotlib as plt
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
+dbutils.fs.cp('/saved_df/fer_df.csv', '/archive/fer_df.csv')
+dbutils.fs.cp('/saved_df/article_totals.csv', '/article_totals.csv')
 
-import csv
 
 # COMMAND ----------
 
@@ -72,15 +76,194 @@ fer_df.loc[fer_df['top_emotion']=='neutral', 'top_neutral'] = 1
 
 # COMMAND ----------
 
+article_totals.to_csv('/dbfs/saved_df/article_totals.csv')
+fer_df.to_csv('/dbfs/saved_df/fer_df.csv')
+
+
+# COMMAND ----------
+
 timestamp = datetime.today()
 timestamp_str = "Updated at: " + str(timestamp.month) + "/" + str(timestamp.day) + "/" + str(timestamp.year) + " " + str(timestamp.hour) + ":" + str(timestamp.minute) + " UTC"
-
 
 
 # COMMAND ----------
 
 
-# SAVED AS percent-by-source-bias-grid
+df1 = article_totals
+
+fig = px.bar(df1, 
+             y='source_name',
+             x='num_articles',             
+             title='How many total news articles were collected from each news source?<br>' + timestamp_str,
+             labels=dict(source_name="News Source", num_articles="Total Articles Collected in Latest Query"),     
+             height=600, width=600)
+
+fig.update_layout(yaxis={'categoryorder':'total ascending'})
+fig.show()
+
+py.iplot(fig, filename='total-articles-by-source')
+
+# COMMAND ----------
+
+
+df1 = fer_df
+df1.sort_values(['name'], ascending=False, inplace=True)
+
+num_articles_order = list(article_totals.sort_values('num_articles', ascending=False)['source_name'])
+
+
+fig = px.bar(df1, 
+             y='source',
+             color='name',
+             title='How many faces were detected in the images collected from each news source<br>'  + timestamp_str,
+             labels=dict(name="", source="News Source", count="Number of Faces Detected in Collected Articles"),     
+             category_orders={'source':num_articles_order},
+             height=600, width=700)
+
+# fig.update_layout(yaxis={'categoryorder':[num_articles_order]})
+fig.show()
+py.iplot(fig, filename='total-faces-detected-by-source')
+
+# COMMAND ----------
+
+date_list = np.sort(fer_df['date'].unique())
+
+fig = px.bar(fer_df, 
+             x="date", 
+             color='name', 
+             facet_col='source_bias',
+             height=600, width=1400,
+             labels=dict(name="", value="%"),
+#              template="simple_white",
+             title='Number of news articles in search query containing images of Donald Trump and Joe Biden (from past week).<br>' + timestamp_str,
+             category_orders={"source_bias":['Left',
+                                             'Lean Left',
+                                             'Center',
+                                             'Lean Right', 
+                                             'Right'],
+                             "date":date_list}
+            )
+
+ 
+
+fig.update_xaxes(tickformat="%m-%d", 
+                 tickangle=-90,
+                 title_text='',
+                 type='category')
+
+fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
+
+fig.show()
+py.iplot(fig, filename='articles-containing-trump-biden-photos-past-week')
+
+
+# COMMAND ----------
+
+
+
+df1 = pd.melt(fer_df, 
+              id_vars=['name'],
+               value_vars=['happy', 
+                   'sad', 
+                   'angry', 
+                   'fear', 
+                   'surprise', 
+                   'disgust', 
+                   'neutral'])
+
+
+df1.loc[df1.variable=='happy', 'variable'] = 'Happy'
+df1.loc[df1.variable=='sad', 'variable'] = 'Sad'
+df1.loc[df1.variable=='angry', 'variable'] = 'Angry'
+df1.loc[df1.variable=='fear', 'variable'] = 'Fear'
+df1.loc[df1.variable=='surprise', 'variable'] = 'Surprise'
+df1.loc[df1.variable=='disgust', 'variable'] = 'Disgust'
+df1.loc[df1.variable=='neutral', 'variable'] = 'Neutral'
+
+
+fig = px.box(df1, 
+             y='value',
+             x='variable',
+             color='variable',
+             height=600, width=700,
+             title='What were the distributions of probabilities returned by the facial recognition<br>model for each type of facial expression?   ' + timestamp_str,
+             labels=dict(name="", variable="", value="Predicted Probability of Emotion"),
+             category_orders={"variable":['Happy','Sad','Angry','Fear','Surprise','Disgust','Neutral']})
+                     
+             
+fig.show()
+py.iplot(fig, filename='probability-boxplots')
+
+
+# COMMAND ----------
+
+df1 = fer_df
+
+df1.loc[df1.top_emotion=='happy', 'top_emotion'] = 'Happy'
+df1.loc[df1.top_emotion=='sad', 'top_emotion'] = 'Sad'
+df1.loc[df1.top_emotion=='angry', 'top_emotion'] = 'Angry'
+df1.loc[df1.top_emotion=='fear', 'top_emotion'] = 'Fear'
+df1.loc[df1.top_emotion=='surprise', 'top_emotion'] = 'Surprise'
+df1.loc[df1.top_emotion=='disgust', 'top_emotion'] = 'Disgust'
+df1.loc[df1.top_emotion=='neutral', 'top_emotion'] = 'Neutral'
+
+
+fig = px.box(df1, 
+             y='top_emotion_prob',
+             x='top_emotion',
+#              color='top_emotion',
+             height=600, width=700,
+             title='What were the distributions for the highest predicted probability expression<br>for each face image (i.e., the "top emotion")?  ' + timestamp_str,
+             labels=dict(top_emotion_prob="Probabilities of Top Expression for Each Face", top_emotion="Top Emotion"),
+             category_orders={"top_emotion":['Happy','Sad','Angry','Fear','Surprise','Disgust','Neutral']})
+
+
+fig.update_yaxes(range=[0,1])
+
+py.iplot(fig, filename='top-emotion-probability-boxplots')
+fig.show()
+
+
+# COMMAND ----------
+
+
+
+df1 = fer_df.groupby(['name','top_emotion'], as_index=False).sum()
+df1.sort_values(['name'], ascending=False, inplace=True)
+
+df1['top_emotion_sum'] = df1[['top_happy','top_sad','top_angry','top_surprise','top_fear','top_disgust','top_neutral']].max(axis=1)
+
+df1.loc[df1.top_emotion=='happy', 'top_emotion'] = 'Happy'
+df1.loc[df1.top_emotion=='sad', 'top_emotion'] = 'Sad'
+df1.loc[df1.top_emotion=='angry', 'top_emotion'] = 'Angry'
+df1.loc[df1.top_emotion=='fear', 'top_emotion'] = 'Fear'
+df1.loc[df1.top_emotion=='surprise', 'top_emotion'] = 'Surprise'
+df1.loc[df1.top_emotion=='disgust', 'top_emotion'] = 'Disgust'
+df1.loc[df1.top_emotion=='neutral', 'top_emotion'] = 'Neutral'
+
+
+fig = px.bar(df1, 
+             x="name", 
+             y="top_emotion_sum",
+             color='top_emotion',
+             text='top_emotion_sum',
+             facet_col='top_emotion',    
+             height=400, width=1200,
+             title="How many face images returned by the search query were classified for each facial expression?<br>" + timestamp_str,
+             labels=dict(name="", top_emotion_sum="Number of face images classified", top_emotion="Predicted Facial Expression"),     
+#              template="simple_white",
+             category_orders={"top_emotion":['Happy','Sad','Angry','Fear','Surprise','Disgust','Neutral']}
+            )
+
+fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
+
+fig.show()
+py.iplot(fig, filename='facial-expression-totals-barchart')
+
+
+
+# COMMAND ----------
+
 
 
 df1 = fer_df.groupby(['source_bias','name'], as_index=False).sum()
@@ -148,182 +331,6 @@ py.iplot(fig, filename='percent-by-source-bias-grid')
 
 # COMMAND ----------
 
-date_list = np.sort(fer_df['date'].unique())
-
-fig = px.bar(fer_df, 
-             x="date", 
-             color='name', 
-             facet_col='source_bias',
-             height=600, width=1400,
-             labels=dict(name="", value="%"),
-#              template="simple_white",
-             title='Number of news articles in search query containing images of Donald Trump and Joe Biden (from past week).<br>' + timestamp_str,
-             category_orders={"source_bias":['Left',
-                                             'Lean Left',
-                                             'Center',
-                                             'Lean Right', 
-                                             'Right'],
-                             "date":date_list}
-            )
-
- 
-
-fig.update_xaxes(tickformat="%m-%d", 
-                 tickangle=-90,
-                 title_text='',
-                 type='category')
-
-fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
-
-fig.show()
-py.iplot(fig, filename='articles-containing-trump-biden-photos-past-week')
-
-
-# COMMAND ----------
-
-
-
-df1 = fer_df.groupby(['name','top_emotion'], as_index=False).sum()
-df1.sort_values(['name'], ascending=False, inplace=True)
-
-df1['top_emotion_sum'] = df1[['top_happy','top_sad','top_angry','top_surprise','top_fear','top_disgust','top_neutral']].max(axis=1)
-
-df1.loc[df1.top_emotion=='happy', 'top_emotion'] = 'Happy'
-df1.loc[df1.top_emotion=='sad', 'top_emotion'] = 'Sad'
-df1.loc[df1.top_emotion=='angry', 'top_emotion'] = 'Angry'
-df1.loc[df1.top_emotion=='fear', 'top_emotion'] = 'Fear'
-df1.loc[df1.top_emotion=='surprise', 'top_emotion'] = 'Surprise'
-df1.loc[df1.top_emotion=='disgust', 'top_emotion'] = 'Disgust'
-df1.loc[df1.top_emotion=='neutral', 'top_emotion'] = 'Neutral'
-
-
-fig = px.bar(df1, 
-             x="name", 
-             y="top_emotion_sum",
-             color='top_emotion',
-             text='top_emotion_sum',
-             facet_col='top_emotion',    
-             height=400, width=1200,
-             title="How many face images returned by the search query were classified for each facial expression?<br>" + timestamp_str,
-             labels=dict(name="", top_emotion_sum="Number of face images classified", top_emotion="Predicted Facial Expression"),     
-#              template="simple_white",
-             category_orders={"top_emotion":['Happy','Sad','Angry','Fear','Surprise','Disgust','Neutral']}
-            )
-
-fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
-
-fig.show()
-py.iplot(fig, filename='facial-expression-totals-barchart')
-
-
-
-# COMMAND ----------
-
-
-df1 = article_totals
-
-fig = px.bar(df1, 
-             y='source_name',
-             x='num_articles',             
-             title='How many total news articles were collected from each news source?<br>' + timestamp_str,
-             labels=dict(source_name="News Source", num_articles="Total Articles Collected in Latest Query"),     
-             height=600, width=600)
-
-fig.update_layout(yaxis={'categoryorder':'total ascending'})
-fig.show()
-
-py.iplot(fig, filename='total-articles-by-source')
-
-# COMMAND ----------
-
-
-
-# COMMAND ----------
-
-
-df1 = fer_df
-df1.sort_values(['name'], ascending=False, inplace=True)
-
-num_articles_order = list(article_totals.sort_values('num_articles', ascending=False)['source_name'])
-
-
-fig = px.bar(df1, 
-             y='source',
-             color='name',
-             title='How many faces were detected in the images collected from each news source<br>'  + timestamp_str,
-             labels=dict(name="", source="News Source", count="Number of Faces Detected in Collected Articles"),     
-             category_orders={'source':num_articles_order},
-             height=600, width=700)
-
-# fig.update_layout(yaxis={'categoryorder':[num_articles_order]})
-fig.show()
-py.iplot(fig, filename='total-faces-detected-by-source')
-
-# COMMAND ----------
-
-
-
-df1 = pd.melt(fer_df, 
-              id_vars=['name'],
-               value_vars=['happy', 
-                   'sad', 
-                   'angry', 
-                   'fear', 
-                   'surprise', 
-                   'disgust', 
-                   'neutral'])
-
-
-df1.loc[df1.variable=='happy', 'variable'] = 'Happy'
-df1.loc[df1.variable=='sad', 'variable'] = 'Sad'
-df1.loc[df1.variable=='angry', 'variable'] = 'Angry'
-df1.loc[df1.variable=='fear', 'variable'] = 'Fear'
-df1.loc[df1.variable=='surprise', 'variable'] = 'Surprise'
-df1.loc[df1.variable=='disgust', 'variable'] = 'Disgust'
-df1.loc[df1.variable=='neutral', 'variable'] = 'Neutral'
-
-
-fig = px.box(df1, 
-             y='value',
-             x='variable',
-             color='variable',
-             height=600, width=700,
-             title='What were the distributions of probabilities returned by the facial recognition<br>model for each type of facial expression?   ' + timestamp_str,
-             labels=dict(name="", variable="", value="Predicted Probability of Emotion"),
-             category_orders={"variable":['Happy','Sad','Angry','Fear','Surprise','Disgust','Neutral']})
-                     
-             
-fig.show()
-py.iplot(fig, filename='probability-boxplots')
-
-
-# COMMAND ----------
-
-df1 = fer_df
-
-df1.loc[df1.top_emotion=='happy', 'top_emotion'] = 'Happy'
-df1.loc[df1.top_emotion=='sad', 'top_emotion'] = 'Sad'
-df1.loc[df1.top_emotion=='angry', 'top_emotion'] = 'Angry'
-df1.loc[df1.top_emotion=='fear', 'top_emotion'] = 'Fear'
-df1.loc[df1.top_emotion=='surprise', 'top_emotion'] = 'Surprise'
-df1.loc[df1.top_emotion=='disgust', 'top_emotion'] = 'Disgust'
-df1.loc[df1.top_emotion=='neutral', 'top_emotion'] = 'Neutral'
-
-
-fig = px.box(df1, 
-             y='top_emotion_prob',
-             x='top_emotion',
-#              color='top_emotion',
-             height=600, width=700,
-             title='What were the distributions for the highest predicted probability expression<br>for each face image (i.e., the "top emotion")?  ' + timestamp_str,
-             labels=dict(top_emotion_prob="Probabilities of Top Expression for Each Face", top_emotion="Top Emotion"),
-             category_orders={"top_emotion":['Happy','Sad','Angry','Fear','Surprise','Disgust','Neutral']})
-
-
-fig.update_yaxes(range=[0,1])
-
-py.iplot(fig, filename='top-emotion-probability-boxplots')
-fig.show()
 
 
 # COMMAND ----------
