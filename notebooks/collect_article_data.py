@@ -27,23 +27,24 @@ spark
 
 # COMMAND ----------
 
-# urllib.request.urlretrieve('https://raw.githubusercontent.com/adichiara/DS504/main/source_data.csv', '/dbfs/saved_df/source_data.csv')
+dbutils.fs.cp('saved_df/source_data.csv', 'archive/source_data/csv')
+dbutils.fs.cp('saved_df/article_df.csv', 'archive/article_df/csv')
 
 # COMMAND ----------
 
-# MAGIC %sh -e rm -r DS504  
+urllib.request.urlretrieve('https://raw.githubusercontent.com/adichiara/DS504/main/source_data.csv', '/dbfs/saved_df/source_data.csv')
 
 # COMMAND ----------
 
-# MAGIC %sh git clone https://github.com/adichiara/DS504
+#%sh git clone https://github.com/adichiara/DS504
 
 # COMMAND ----------
 
-# MAGIC %sh -e ls DS504/ -al 
+#%sh -e ls DS504/ -al 
 
 # COMMAND ----------
 
-# MAGIC %fs mv 'file:/databricks/driver/DS504/source_data.csv' '/saved_df/source_data.csv'
+#%fs mv 'file:/databricks/driver/DS504/source_data.csv' '/saved_df/source_data.csv'
 
 # COMMAND ----------
 
@@ -214,7 +215,7 @@ display(article_df)
 # COMMAND ----------
 
 article_df = article_df.drop_duplicates('title') # drop duplicate articles
-article_df = article_df.loc[article_df.urlToImage != 'null',:] # drop null URL strings
+article_df = article_df.loc[pd.isnull(article_df.urlToImage)==False,:] 
 article_df = article_df.reset_index(drop=True)
 
 
