@@ -426,3 +426,52 @@ filename_str = 'show-image-with-highest-probability-' + emotion
 # py.iplot(fig, filename=filename_str)
 fig.show()
 
+
+
+# COMMAND ----------
+
+# Upload datafile to github repo
+
+!pip install PyGithub
+from github import Github
+
+# ---------
+
+git_file = 'fer_df.csv'
+dbfs_file = '/dbfs/saved_df/fer_df.csv'
+
+# ---------
+
+f = open("github_token.txt", "r")
+github_token = f.read()
+f.close()
+
+g = Github(github_token)
+repo = g.get_repo("adichiara/DS504")
+contents = repo.get_contents("")
+all_files = []
+
+while contents:
+    file_content = contents.pop(0)
+    if file_content.type == "dir":
+        contents.extend(repo.get_contents(file_content.path))
+    else:
+        file = file_content
+        all_files.append(str(file).replace('ContentFile(path="','').replace('")',''))
+
+
+with open(dbfs_file, 'r') as file:
+    content = file.read()
+
+# ---------
+    
+commit_txt = "uploaded from Databricks."
+
+if git_file in all_files:
+    contents = repo.get_contents(git_file)
+    repo.update_file(contents.path, commit_txt, content, contents.sha, branch="main")
+    print(git_file + ' UPDATED')
+else:
+    repo.create_file(git_file, commit_txt, content, branch="main")
+    print(git_file + ' CREATED')
+    
