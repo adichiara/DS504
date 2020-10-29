@@ -10,7 +10,11 @@ import chart_studio.plotly as py
 from chart_studio.plotly import plot, iplot
 import plotly.graph_objects as go
 import plotly.express as px
+from plotly.subplots import make_subplots
 
+!pip install scikit-image
+import skimage
+from skimage import io
 
 chart_studio.tools.set_credentials_file(username='adamjd', 
                                         api_key='1piYaG7ohT90yKxLEjL7')
@@ -303,7 +307,7 @@ py.iplot(fig, filename='top-emotion-probability-boxplots')
 
 # COMMAND ----------
 
-!pip install scikit-image
+
 
 # COMMAND ----------
 
@@ -342,47 +346,33 @@ face_df
 
 # COMMAND ----------
 
+face_df['disgust'].value_counts()
 
-from plotly.subplots import make_subplots
-import skimage
-from skimage import io
+# COMMAND ----------
+
+
+
+# COMMAND ----------
+
+
+emotion = 'surprise'
+
+row = face_df[emotion].idxmax()
+url = face_df.loc[row,'urlToImage']
+img_all = io.imread(url)
+img_face = face_np[row]
+prob = np.round(face_df.loc[row,emotion],2)
+title = emotion + ": " + str(prob) + " probability"
 
 fig = make_subplots(
     rows=1, cols=2,
-    column_widths=[0.7, 0.3])
+    subplot_titles=(url,title))
 
-
-row = face_df['sad'].idxmax()
-img_face = face_np[row]
-url = face_df.loc[row,'urlToImage']
-img_all = io.imread(url)
 fig.add_trace(go.Image(z=img_all), 1, 1)
 fig.add_trace(go.Image(z=img_face), 1, 2)
+
+fig.update_xaxes(showticklabels=False, showgrid=False)
+fig.update_yaxes(showticklabels=False, showgrid=False)
+
 fig.show()
-
-# row = face_df['sad'].idxmax()
-# img = face_np[row]
-# fig.add_trace(go.Image(z=img), 1, 2)
-
-# row = face_df['angry'].idxmax()
-# img = face_np[row]
-# fig.add_trace(go.Image(z=img), 1, 3)
-
-# row = face_df['fear'].idxmax()
-# img = face_np[row]
-# fig.add_trace(go.Image(z=img), 1, 4)
-
-# row = face_df['surprise'].idxmax()
-# img = face_np[row]
-# fig.add_trace(go.Image(z=img), 2, 1)
-
-# row = face_df['disgust'].idxmax()
-# img = face_np[row]
-# fig.add_trace(go.Image(z=img), 2, 2)
-
-# row = face_df['neutral'].idxmax()
-# img = face_np[row]
-# fig.add_trace(go.Image(z=img), 2, 3)
-
-
-# fig.show()    
+    
