@@ -44,7 +44,15 @@ spark
 
 # COMMAND ----------
 
-dbutils.fs.ls('/')
+# make backups of latest data files
+
+dbutils.fs.cp('/saved_df/face_df.csv','/archive/face_df.csv')
+dbutils.fs.cp('/faces/face_np.npy','/archive/face_np.npy')
+
+
+# COMMAND ----------
+
+# delete existing image files to be replaced
 
 # COMMAND ----------
 
@@ -57,7 +65,6 @@ dbutils.fs.mkdirs('/img_dir/')
 # COMMAND ----------
 
 article_df = pd.read_csv("/dbfs/saved_df/article_df.csv", header=0, index_col=0)
-display(article_df)
 
 # COMMAND ----------
 
@@ -86,10 +93,6 @@ for i, x in article_df.iterrows():
 # read images into Spark image dataframe
 image_df = spark.read.format("image").load('/img_dir/')
 
-
-# COMMAND ----------
-
-dbutils.fs.ls('/img_dir/')
 
 # COMMAND ----------
 
@@ -134,10 +137,6 @@ for i,x in known_faces_df.iterrows():
 
     known_faces_df.at[i,'face'] = face
     known_faces_df.at[i,'encoding'] = encoding
-
-# COMMAND ----------
-
-article_df.head()
 
 # COMMAND ----------
 
@@ -199,6 +198,8 @@ for i,x in article_df.iterrows():
                             'day': x['day']}
 
                 face_df = face_df.append(pd.Series(face_dict), ignore_index=True)
+        
+                face_list.append(face)
 
                               
 face_np = np.array(face_list)
@@ -211,37 +212,13 @@ face_np = np.array(face_list)
 
 # COMMAND ----------
 
-face_df.head()
-
-# COMMAND ----------
-
-from pyspark.sql import SparkSession
-from pyspark.sql.types import *
-
-spark = SparkSession.builder.appName('pandasToSparkDF').getOrCreate()
-
-# mySchema = StructType([StructField('Unnamed: 0', IntegerType(), True),
-#                        StructField('domain',  StringType(), True),
-#                        StructField('source_id',  StringType(), True),
-#                        StructField('source_name',  StringType(), True),
-#                        StructField('title', StringType(), True),
-#                        StructField('urlToImage',  StringType(), True),
-#                        StructField('date', StringType(), True),
-#                        StructField('image_path',  StringType(), True),
-#                        StructField('image_file', StringType(), True)])
-
-# spark_df = spark.createDataFrame(article_df, schema=mySchema)
-
-spark_df = spark.createDataFrame(article_df)
-
-display(spark_df)
-
-# COMMAND ----------
-
 print(face_df.name.value_counts()['Joe Biden'])
 print(face_df.name.value_counts()['Donald Trump'])
-
       
+
+# COMMAND ----------
+
+np.save('/dbfs/faces/face_np.npy', face_np)
 
 # COMMAND ----------
 
