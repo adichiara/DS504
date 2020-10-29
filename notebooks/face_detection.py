@@ -238,7 +238,7 @@ dbfs_file = '/dbfs/saved_df/face_df.csv'
 
 # ---------
 
-f = open("github_token.txt", "r")
+f = open("/dbfs/github_token.txt", "r")
 github_token = f.read()
 f.close()
 
