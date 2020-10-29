@@ -24,7 +24,7 @@ from skimage import io
 from datetime import datetime
 
 f = open("/dbfs/plotly_token.txt", "r")
-github_token = f.read()
+plotly_token = f.read()
 f.close()
 
 chart_studio.tools.set_credentials_file(username='adamjd', 
@@ -471,3 +471,10 @@ else:
     repo.create_file(git_file, commit_txt, content, branch="main")
     print(git_file + ' CREATED')
     
+
+# COMMAND ----------
+
+
+
+# COMMAND ----------
+
