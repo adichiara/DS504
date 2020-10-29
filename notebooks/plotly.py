@@ -23,8 +23,12 @@ from skimage import io
 
 from datetime import datetime
 
+f = open("/dbfs/plotly_token.txt", "r")
+github_token = f.read()
+f.close()
+
 chart_studio.tools.set_credentials_file(username='adamjd', 
-                                        api_key='1piYaG7ohT90yKxLEjL7')
+                                        api_key=plotly_token)
 
 
 
@@ -332,14 +336,6 @@ py.iplot(fig, filename='percent-by-source-bias-grid')
 # COMMAND ----------
 
 
-
-# COMMAND ----------
-
-
-
-# COMMAND ----------
-
-
 emotion = 'happy'
 
 row = face_df[emotion].idxmax()
@@ -442,7 +438,7 @@ dbfs_file = '/dbfs/saved_df/fer_df.csv'
 
 # ---------
 
-f = open("github_token.txt", "r")
+f = open("/dbfs/github_token.txt", "r")
 github_token = f.read()
 f.close()
 
