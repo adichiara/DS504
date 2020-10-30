@@ -471,10 +471,3 @@ else:
     repo.create_file(git_file, commit_txt, content, branch="main")
     print(git_file + ' CREATED')
     
-
-# COMMAND ----------
-
-
-
-# COMMAND ----------
-
